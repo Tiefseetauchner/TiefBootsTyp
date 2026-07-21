@@ -1,0 +1,18 @@
+[package]
+name = "tiefbootstyp"
+version = "0.1.0"
+compiler = "0.15.0"
+authors = ["Lena Tauchner"]
+entrypoint = "lib.typ"
+license = "MIT"
+description = "Bootstrap Wrapper and Template for Typst"
+keywords = ["bootstrap", "wrapper", "bundle", "html"]
+categories = ["fun", "website"]
+disciplines = []
+homepage = "https://www.lukechriswalker.at/projects/????"
+repository = "https://github.com/Tiefseetauchner/TiefBootsTyp"
+
+[template]
+path = "template"
+entrypoint = "main.typ"
+thumbnail = "thumbnail.png"
