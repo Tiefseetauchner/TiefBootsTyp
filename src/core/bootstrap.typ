@@ -63,11 +63,11 @@
     let final-state = custom-btyp-js-state.final()
     let final-script = "// Generated code for TiefBootsTyp"
     final-script += "\n// Handler Function registration"
-    for handler in final-state.handlers {
+    for (name, handler) in final-state.handlers {
       final-script += "\n\nfunction " + handler.function-name + "(e) {" + handler.function + "}"
     }
     final-script += "\n\n// Registration  of Handler Functions in EventListeners"
-    for listener in final-state.listeners {
+    for (name, listener) in final-state.listeners {
       final-script += (
         "\n\ndocument.getElementById(\""
           + listener.id

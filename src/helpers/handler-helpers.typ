@@ -4,38 +4,47 @@
   "customBTypCB" + str(id)
 }
 
-#let get-handler(function, event: "click") = {
+#let handler(function, event: "click") = {
   (
-    function-name: get-handler-function-name(custom-btyp-js-handler-fn-counter.get().last()),
     function: function,
     event: event,
   )
 }
 
 #let register-handler(handler) = {
-  context custom-btyp-js-handler-fn-counter.step()
   custom-btyp-js-state.update(prev => {
-    prev.handlers.push(handler)
+    let id = repr(handler)
+
+    if id not in prev.handlers {
+      let index = prev.handlers.len() + 1
+      prev.handlers.insert(id, (function-name: get-handler-function-name(index), ..handler))
+    }
 
     prev
   })
 }
 
-#let get-element-id(id) = {
-  "customBTypElemId" + str(id)
-}
+#let get-handler(handler) = custom-btyp-js-state.get().handlers.at(repr(handler), default: none)
 
-#let get-listener(handler, element-id) = {
+#let listener(handler) = {
+  let retrHandler = get-handler(handler)
+
   (
-    id: element-id,
-    handler-function-name: handler.function-name,
-    handler-event: handler.event,
+    handler-function-name: retrHandler.function-name,
+    handler-event: retrHandler.event,
   )
 }
 
-#let register-listener(listener) = {
+#let register-listener(listener, element-id) = {
   custom-btyp-js-state.update(prev => {
-    prev.listeners.push(listener)
+    let id = repr((element-id, listener))
+
+    if id not in prev.listeners {
+      let index = prev.listeners.len() + 1
+      prev.listeners.insert(id, (id: element-id, ..listener))
+    }
+
+    prev.elem-ids.push(element-id)
 
     prev
   })

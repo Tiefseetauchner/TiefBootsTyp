@@ -19,62 +19,90 @@
 #let is-registered-handler(listener) = {
   (
     type(listener) == dictionary
-      and listener.at("function-name", default: none) != none
       and listener.at("function", default: none) != none
       and listener.at("event", default: none) != none
   )
 }
 
-#let register-interactive-listeners(listeners, element-id) = {
-  if listeners == none {
+#let get-handlers-from-callbacks(cb) = {
+  if cb == none {
     return
   }
 
-  if type(listeners) == str {
-    let handler = get-handler(listeners)
-    register-handler(handler)
-    let registrable-listener = get-listener(handler, element-id)
-    register-listener(registrable-listener)
-  }
-
-  if is-registered-handler(listeners) {
-    let registrable-listener = get-listener(listeners, element-id)
-    register-listener(registrable-listener)
-  }
-
-  if type(listeners) == array {
-    for listener in listeners {
-      register-interactive-listeners(listener, element-id)
-    }
+  if type(cb) == str {
+    return (handler(cb),)
+  } else if type(cb) == array {
+    let handlers = (
+      ..for elem in cb {
+        (..get-handlers-from-callbacks(elem),)
+      },
+    )
+    return handlers
+  } else {
+    return (cb,)
   }
 }
 
-#let button(variant: none, class-names: none, href: none, listeners: none, ..args, content) = context {
+#let listeners-from-callbacks(cb) = {
+  if cb == none {
+    return
+  }
+
+  if is-registered-handler(cb) {
+    return (listener(cb),)
+  } else if type(cb) == array {
+    return (
+      ..for listener in cb {
+        (..listeners-from-callbacks(listener),)
+      },
+    )
+  }
+
+  assert(false, message: "cb was neither a registered handler nor an array of registered handlers.")
+}
+
+#let get-element-id() = {
+  "customBTypElemId" + str(custom-btyp-js-state.get().elem-ids.len())
+}
+
+#let get-last-element-id() = {
+  custom-btyp-js-state.get().elem-ids.last()
+}
+
+#let button(variant: none, class-names: none, href: none, callbacks: none, ..args, content) = {
   assert(
     variant == none or button-variants.contains(variant),
     message: "Only the following variants exist for button: " + button-variants.join(", "),
   )
-  assert(listeners == none or href == none, message: "Cannot set both listeners and href")
+  assert(callbacks == none or href == none, message: "Cannot set both callbacks and href")
 
   let btn-classes = (..spread-or-single(class-names), "btn", concat-class-name("btn", default(variant, "subtle")))
 
   let passed-id = args.named().at("id", default: none)
 
-  if listeners != none {
-    assert(passed-id == none, message: "Cannot pass id to element if listener is passed")
-
-    custom-btyp-elem-counter.step()
-    let elem-count = custom-btyp-elem-counter.get().last()
-    let element-id = get-element-id(elem-count)
-    passed-id = element-id
-
-    register-interactive-listeners(listeners, element-id)
-  }
-
   context {
+    let elem-id = none
+    if callbacks != none {
+      assert(passed-id == none, message: "Cannot pass id to element if listener is passed")
+      elem-id = get-element-id()
+
+      let handlers = get-handlers-from-callbacks(callbacks)
+      for handler in handlers {
+        register-handler(handler)
+      }
+
+      context {
+        let listeners = listeners-from-callbacks(handlers)
+        for listener in listeners {
+          register-listener(listener, elem-id)
+        }
+      }
+    }
+
     let rendered-button = h.button(
       class-names: btn-classes.join(" "),
       type: args.named().at("type", default: "button"),
+      ..if elem-id != none { (id: elem-id) },
       ..if passed-id != none { (id: passed-id) },
       ..args,
     )[
