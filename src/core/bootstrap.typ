@@ -33,10 +33,10 @@
   bootstrap-version: bootstrap-versions.at("5.3.8"),
   enable-popperjs: true,
   popperjs-version: popperjs-versions.at("2.11.6"),
-) = context {
-  let document-info = get-document-info()
+) = {
+  let head = context {
+    let document-info = get-document-info()
 
-  let head = {
     html.meta(charset: "utf-8")
     html.meta(name: "viewport", content: "width=device-width, initial-scale=1")
     html.title(document-info.title)
@@ -50,7 +50,7 @@
     )
   }
 
-  let after-page = {
+  let after-page = context {
     html.script(
       crossorigin: "anonymous",
       ..bootstrap-version.js,
@@ -59,10 +59,29 @@
       crossorigin: "anonymous",
       ..popperjs-version.js,
     )
+
+    let final-state = custom-btyp-js-state.final()
+    let final-script = "// Generated code for TiefBootsTyp"
+    final-script += "\n// Handler Function registration"
+    for handler in final-state.handlers {
+      final-script += "\n\nfunction " + handler.function-name + "(e) {" + handler.function + "}"
+    }
+    final-script += "\n\n// Registration  of Handler Functions in EventListeners"
+    for listener in final-state.listeners {
+      final-script += (
+        "\n\ndocument.getElementById(\""
+          + listener.id
+          + "\").addEventListener(\""
+          + listener.handler-event
+          + "\", "
+          + listener.handler-function-name
+          + ");"
+      )
+    }
     html.script(
-      custom-btyp-js-state.final().script,
+      final-script,
     )
   }
 
-  html.html(lang: document-info.locale, head + body + after-page)
+  context html.html(lang: get-document-info().locale, head + body + after-page)
 }

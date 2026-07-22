@@ -1,48 +1,42 @@
 #import "state-helpers.typ": *
 
-#let create-handler(function, event: "click") = {
+#let get-handler-function-name(id) = {
+  "customBTypCB" + str(id)
+}
+
+#let get-handler(function, event: "click") = {
   (
-    state: custom-btyp-js-state.update(prev => (
-      id: prev.id + 1,
-      script: prev.script + "\n\nfunction customBtypJsCb" + str(prev.id + 1) + "(e) {\n" + function + "\n}",
-    )),
-    cb-fn-name: "customBtypJsCb" + str(custom-btyp-js-state.get().id + 1),
+    function-name: get-handler-function-name(custom-btyp-js-handler-fn-counter.get().last()),
+    function: function,
     event: event,
   )
 }
 
-#let register-existing-handler(cb-fn-name, event) = {
+#let register-handler(handler) = {
+  context custom-btyp-js-handler-fn-counter.step()
+  custom-btyp-js-state.update(prev => {
+    prev.handlers.push(handler)
+
+    prev
+  })
+}
+
+#let get-element-id(id) = {
+  "customBTypElemId" + str(id)
+}
+
+#let get-listener(handler, element-id) = {
   (
-    state: custom-btyp-js-state.update(prev => (
-      id: prev.id + 1,
-      script: prev.script
-        + "\n\ndocument.getElementById(\"custom-btyp-js-id-"
-        + str(prev.id + 1)
-        + "\").addEventListener(\""
-        + event
-        + "\", (e) => "
-        + cb-fn-name
-        + "(e));",
-    )),
-    id: "custom-btyp-js-id-" + str(custom-btyp-js-state.get().id + 1),
+    id: element-id,
+    handler-function-name: handler.function-name,
+    handler-event: handler.event,
   )
 }
 
-#let register-single-use-handler(function) = {
-  (
-    state: custom-btyp-js-state.update(prev => (
-      id: prev.id + 1,
-      script: prev.script
-        + "\n\ndocument.getElementById(\"custom-btyp-js-id-"
-        + str(prev.id + 1)
-        + "\").addEventListener(\"click\", (e) => customBtypJsCb"
-        + str(prev.id + 1)
-        + "(e));\n\nfunction customBtypJsCb"
-        + str(prev.id + 1)
-        + "(e) {\n"
-        + function
-        + "\n}",
-    )),
-    id: "custom-btyp-js-id-" + str(custom-btyp-js-state.get().id + 1),
-  )
+#let register-listener(listener) = {
+  custom-btyp-js-state.update(prev => {
+    prev.listeners.push(listener)
+
+    prev
+  })
 }

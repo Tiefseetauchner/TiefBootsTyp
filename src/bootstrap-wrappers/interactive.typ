@@ -16,59 +16,66 @@
   "link",
 )
 
-#let button(variant: none, class-names: none, href: none, handlers: none, ..args, content) = {
+#let is-registered-handler(listener) = {
+  (
+    type(listener) == dictionary
+      and listener.at("function-name", default: none) != none
+      and listener.at("function", default: none) != none
+      and listener.at("event", default: none) != none
+  )
+}
+
+#let register-interactive-listeners(listeners, element-id) = {
+  if listeners == none {
+    return
+  }
+
+  if type(listeners) == str {
+    let handler = get-handler(listeners)
+    register-handler(handler)
+    let registrable-listener = get-listener(handler, element-id)
+    register-listener(registrable-listener)
+  }
+
+  if is-registered-handler(listeners) {
+    let registrable-listener = get-listener(listeners, element-id)
+    register-listener(registrable-listener)
+  }
+
+  if type(listeners) == array {
+    for listener in listeners {
+      register-interactive-listeners(listener, element-id)
+    }
+  }
+}
+
+#let button(variant: none, class-names: none, href: none, listeners: none, ..args, content) = context {
   assert(
     variant == none or button-variants.contains(variant),
     message: "Only the following variants exist for button: " + button-variants.join(", "),
   )
-  assert(handlers == none or href == none, message: "Cannot set both handlers and href")
-
-  context {
-    btn-ids-state.update(p => "")
-  }
+  assert(listeners == none or href == none, message: "Cannot set both listeners and href")
 
   let btn-classes = (..spread-or-single(class-names), "btn", concat-class-name("btn", default(variant, "subtle")))
 
-  if handlers != none {
-    let handler-is-reusable(handler) = type(handler) == dictionary and handler.at("cb-fn-name", default: none) != none
+  let passed-id = args.named().at("id", default: none)
 
-    if type(handlers) == array {
-      for handler in handlers {
-        context {
-          if handler-is-reusable(handler) {
-            let registered = register-existing-handler(handler.cb-fn-name, handler.event)
-            btn-ids-state.update(prev => prev += " " + registered.id)
-            registered.state
-          } else {
-            context {
-              let registered = register-single-use-handler(handler)
-              btn-ids-state.update(prev => prev += " " + registered.id)
-              registered.state
-            }
-          }
-        }
-      }
-    } else {
-      let handler = handlers
-      context {
-        if handler-is-reusable(handler) {
-          let registered = register-existing-handler(handler.cb-fn-name, handler.event)
-          btn-ids-state.update(prev => prev += " " + registered.id)
-          registered.state
-        } else {
-          let registered = register-single-use-handler(handler)
-          btn-ids-state.update(prev => prev += " " + registered.id)
-          registered.state
-        }
-      }
-    }
+  if listeners != none {
+    assert(passed-id == none, message: "Cannot pass id to element if listener is passed")
+
+    custom-btyp-elem-counter.step()
+    let elem-count = custom-btyp-elem-counter.get().last()
+    let element-id = get-element-id(elem-count)
+    passed-id = element-id
+
+    register-interactive-listeners(listeners, element-id)
   }
 
   context {
-    [id: #type(btn-ids-state.get()),]
     let rendered-button = h.button(
-      class-names: btn-classes,
+      class-names: btn-classes.join(" "),
       type: args.named().at("type", default: "button"),
+      ..if passed-id != none { (id: passed-id) },
       ..args,
     )[
       #content

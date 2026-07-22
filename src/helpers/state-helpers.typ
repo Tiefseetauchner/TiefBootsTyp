@@ -1,6 +1,7 @@
-#let custom-btyp-js-state = state("custom-btyp-js", (id: 0, script: ""))
+#let custom-btyp-js-state = state("custom-btyp-js", (
+  handlers: (),
+  listeners: (),
+))
 
-#let btn-ids-state = state(
-  "btn-ids",
-  "",
-)
+#let custom-btyp-elem-counter = counter("custom-btyp-elem-id")
+#let custom-btyp-js-handler-fn-counter = counter("custom-btyp-js-handler-fn")
